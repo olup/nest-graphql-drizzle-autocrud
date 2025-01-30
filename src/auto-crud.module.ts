@@ -30,11 +30,11 @@ import {
   AUTO_CRUD_RESOLVER_KEY,
   AUTO_CRUD_WRAP_RESOLVER_KEY,
   AUTOCRUD_OPTIONS,
+  DRIZZLE_ORM_INJECTION_KEY,
 } from "./constant";
 
 interface AutoCrudOptions {
   schema: Record<string, PgTable | Relations>;
-  drizzleOrmInjectionKey: string;
 }
 
 @Injectable()
@@ -48,7 +48,7 @@ export class AutoCrudService implements OnModuleInit {
     private readonly metadataScanner: MetadataScanner,
     @Inject(AUTOCRUD_OPTIONS)
     private readonly globalOptions: AutoCrudOptions,
-    @Inject("DRIZZLE_ORM")
+    @Inject(DRIZZLE_ORM_INJECTION_KEY)
     private readonly drizzleOrm: PostgresJsDatabase
   ) {
     this.extractedSchema = extractSchemaRepresentation(
@@ -174,6 +174,10 @@ export class AutoCrudService implements OnModuleInit {
 })
 export class AutoCrudModule {
   static forRoot(options: AutoCrudOptions): DynamicModule {
+    if (!options.schema || Object.keys(options.schema).length === 0) {
+      throw new Error("Schema configuration is required and cannot be empty");
+    }
+
     return {
       module: AutoCrudModule,
       imports: [DiscoveryModule],
@@ -181,10 +185,6 @@ export class AutoCrudModule {
         {
           provide: AUTOCRUD_OPTIONS,
           useValue: options,
-        },
-        {
-          provide: "DRIZZLE_ORM",
-          useExisting: options.drizzleOrmInjectionKey,
         },
         AutoCrudService,
       ],

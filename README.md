@@ -1,110 +1,139 @@
-# nest-graphql-drizzle-autocrud
+# NestJS GraphQL Drizzle AutoCRUD
 
-Automatic CRUD operations for NestJS GraphQL using Drizzle ORM.
+Automatically generate GraphQL CRUD resolvers from your Drizzle schema.
 
 ## Installation
 
-Using pnpm (recommended):
-```bash
-pnpm add nest-graphql-drizzle-autocrud
-```
-
-Using npm:
 ```bash
 npm install nest-graphql-drizzle-autocrud
 ```
 
-Using yarn:
-```bash
-yarn add nest-graphql-drizzle-autocrud
-```
-
-## Requirements
-
-This package has the following peer dependencies:
-- `@nestjs/common`: ^10.0.0
-- `@nestjs/core`: ^10.0.0
-- `drizzle-orm`: ^0.28.0
-- `reflect-metadata`: ^0.1.13
-
 ## Usage
 
+1. First, set up your Drizzle client:
+
 ```typescript
-import { add } from 'nest-graphql-drizzle-autocrud';
+// drizzle/client.ts
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
-// Example usage
-const result = add(2, 3); // returns 5
+const client = postgres('postgres://user:pass@host:port/db');
+export const db = drizzle(client);
 ```
 
-## Development
+2. Create your schema:
 
-### Setup
-```bash
-# Install dependencies
-pnpm install
+```typescript
+// drizzle/schema.ts
+import { pgTable, serial, text } from 'drizzle-orm/pg-core';
+
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull(),
+});
 ```
 
-### Available Scripts
+3. Import DrizzleModule and AutoCrudModule in your app module:
 
-```bash
-# Build the package
-pnpm build
+```typescript
+import { Module } from '@nestjs/common';
+import { DrizzleModule } from 'nest-graphql-drizzle-autocrud';
+import { AutoCrudModule } from 'nest-graphql-drizzle-autocrud';
+import { db } from './drizzle/client';
+import { users } from './drizzle/schema';
 
-# Run tests
-pnpm test
-
-# Lint the code
-pnpm lint
-
-# Format the code
-pnpm format
+@Module({
+  imports: [
+    DrizzleModule.forRoot({
+      client: db,
+    }),
+    AutoCrudModule.forRoot({
+      schema: {
+        users,
+      },
+    }),
+  ],
+})
+export class AppModule {}
 ```
 
-### Versioning
+4. Create a resolver:
 
-This package follows [Semantic Versioning](https://semver.org/). To update the version:
+```typescript
+import { AutoCrudResolver } from 'nest-graphql-drizzle-autocrud';
+import { users } from './drizzle/schema';
 
-```bash
-# Patch version for backwards-compatible bug fixes
-pnpm version patch  # 1.0.0 -> 1.0.1
-
-# Minor version for backwards-compatible features
-pnpm version minor  # 1.0.0 -> 1.1.0
-
-# Major version for breaking changes
-pnpm version major  # 1.0.0 -> 2.0.0
-
-# Set specific version
-pnpm version 1.2.3
+@AutoCrudResolver({
+  schema: users,
+})
+export class UsersResolver {}
 ```
 
-After versioning, push your changes and tags:
-```bash
-git push --follow-tags
+Now you have the following GraphQL queries and mutations automatically generated:
+
+```graphql
+type User {
+  id: Int!
+  name: String!
+  email: String!
+}
+
+type Query {
+  getUser(id: Int!): User
+  getUsers(where: UserWhereInput): [User!]!
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: Int!, input: UpdateUserInput!): User
+  deleteUser(id: Int!): User
+}
 ```
 
-### Publishing
+## Custom Resolvers
 
-The package is automatically published to npm when a new version tag is pushed. The process is handled by GitHub Actions:
+You can customize the auto-generated resolvers by using the `@WrapResolver` decorator:
 
-1. Create and push a new version tag:
-   ```bash
-   pnpm version <version-type>
-   git push --follow-tags
-   ```
-2. The GitHub Action will automatically:
-   - Run tests
-   - Build the package
-   - Publish to npm
+```typescript
+@AutoCrudResolver({
+  schema: users,
+})
+export class UsersResolver {
+  @WrapResolver('getOne')
+  async beforeGetUser(id: number) {
+    // Custom logic before getting a user
+    console.log(`Getting user ${id}`);
+    return id;
+  }
+
+  @WrapResolver('createOne')
+  async afterCreateUser(input: any) {
+    // Custom logic after creating a user
+    await sendWelcomeEmail(input.email);
+    return input;
+  }
+}
+```
+
+## Configuration
+
+The DrizzleModule and AutoCrudModule can be configured with various options:
+
+```typescript
+DrizzleModule.forRoot({
+  client: db, // Your drizzle client instance
+})
+
+AutoCrudModule.forRoot({
+  schema: {
+    users, // Your drizzle schema tables
+    posts,
+    comments,
+  },
+})
+```
 
 ## License
 
 MIT
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
