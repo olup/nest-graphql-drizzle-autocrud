@@ -1,0 +1,122 @@
+import { Int } from '@nestjs/graphql';
+import {
+  BooleanFilter,
+  DateTimeFilter,
+  FloatFilter,
+  IntFilter,
+  StringFilter,
+} from './generics';
+import {
+  and,
+  eq,
+  gt,
+  gte,
+  ilike,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  not,
+  or,
+  SQL,
+} from 'drizzle-orm';
+import { PgTable } from 'drizzle-orm/pg-core';
+import { DrizzleType, FilterFunction, GraphQLType } from '../types/model.types';
+
+/**
+ * Maps Drizzle types to GraphQL types
+ */
+export function mapDrizzleToGraphQLType(drizzleType: DrizzleType): GraphQLType {
+  const typeMap: Record<DrizzleType, GraphQLType> = {
+    integer: Int,
+    text: String,
+    timestamp: String,
+    number: Int,
+    boolean: Boolean,
+  };
+  return typeMap[drizzleType] || String;
+}
+
+/**
+ * Maps GraphQL types to corresponding filter types
+ */
+export function mapGraphQLTypeToFilterType(type: GraphQLType) {
+  const typeMap: Record<string, any> = {
+    Int: IntFilter,
+    String: StringFilter,
+    Float: FloatFilter,
+    Date: DateTimeFilter,
+    Boolean: BooleanFilter,
+  };
+  // @ts-expect-error test
+  return typeMap[type] || StringFilter;
+}
+
+const filterMap: Record<string, FilterFunction> = {
+  equals: eq,
+  not,
+  in: inArray,
+  lt,
+  lte,
+  gt,
+  gte,
+  and,
+  or,
+  isNull: (column, value) => (value ? isNull(column) : not(isNull(column))),
+  includes: (column, value) => ilike(column, `%${String(value)}%`),
+};
+
+export function mapFilterToDrizzleFilter(filter: string): FilterFunction {
+  const drizzleFilter = filterMap[filter];
+  if (!drizzleFilter) {
+    throw new Error(`Unsupported filter operation: ${filter}`);
+  }
+  return drizzleFilter;
+}
+
+export const queryFilterToDrizzleFilter = (
+  queryFilter: Record<string, any>,
+  fields: PgTable,
+): SQL => {
+  if (!queryFilter || Object.keys(queryFilter).length === 0) {
+    return undefined;
+  }
+
+  const conditions = Object.entries(queryFilter)
+    .map(([key, value]): SQL | undefined => {
+      if (value === undefined) return undefined;
+
+      switch (key) {
+        case 'and':
+          return and(
+            ...(value as any[])
+              .map((f) => queryFilterToDrizzleFilter(f, fields))
+              .filter(Boolean),
+          );
+        case 'or':
+          return or(
+            ...(value as any[])
+              .map((f) => queryFilterToDrizzleFilter(f, fields))
+              .filter(Boolean),
+          );
+        case 'not':
+          return not(queryFilterToDrizzleFilter(value, fields));
+        default:
+          if (!fields[key]) {
+            throw new Error(`Unknown field: ${key}`);
+          }
+          return and(
+            ...Object.entries(value)
+              .map(([filterKey, filterValue]): SQL | undefined => {
+                if (filterValue === undefined) return undefined;
+                const filterFunction = mapFilterToDrizzleFilter(filterKey);
+                return filterFunction(fields[key], filterValue);
+              })
+              .filter(Boolean),
+          );
+      }
+    })
+    .filter(Boolean);
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+};

@@ -1,0 +1,64 @@
+{
+  "name": "nest-graphql-drizzle-autocrud",
+  "version": "1.0.0",
+  "description": "Automatic CRUD operations for NestJS GraphQL using Drizzle ORM",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": false,
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepare": "pnpm build"
+  },
+  "keywords": [
+    "nestjs",
+    "graphql",
+    "drizzle-orm",
+    "crud",
+    "typescript",
+    "autocrud"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@nestjs/common": "^10.2.7",
+    "@nestjs/core": "^10.2.7",
+    "@nestjs/graphql": "^13.0.2",
+    "@nestjs/testing": "^10.2.7",
+    "@types/node": "^20.8.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.3",
+    "@typescript-eslint/parser": "^6.7.3",
+    "drizzle-orm": "^0.28.6",
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.3",
+    "reflect-metadata": "^0.1.13",
+    "typescript": "^5.2.2",
+    "vitest": "^0.34.5"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/core": "^10.0.0",
+    "@nestjs/graphql": "^13.0.2",
+    "drizzle-orm": "^0.28.0",
+    "reflect-metadata": "^0.1.13"
+  },
+  "packageManager": "pnpm@8.8.0",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/nest-graphql-drizzle-autocrud.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/nest-graphql-drizzle-autocrud/issues"
+  },
+  "homepage": "https://github.com/yourusername/nest-graphql-drizzle-autocrud#readme"
+}
