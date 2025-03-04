@@ -1,22 +1,22 @@
-import { Args, Field, InputType, Mutation } from '@nestjs/graphql';
-import { eq } from 'drizzle-orm';
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { Model } from '../types/model.types';
-import { Wrapper } from '../types/wrapper.type';
-import { toCamelCase } from '../utils/string.utils';
-import { mapDrizzleToGraphQLType } from '../utils/type-mapping.utils';
+import { Args, Field, InputType, Mutation } from "@nestjs/graphql";
+import { eq } from "drizzle-orm";
+import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { Model } from "../types/model.types";
+import { Wrapper } from "../types/wrapper.type";
+import { toCamelCase } from "../utils/string.utils";
+import { mapDrizzleToGraphQLType } from "../utils/type-mapping.utils";
 
 export function updateOneGenerator(
   target: any,
   model: Model,
   db: PostgresJsDatabase,
-  wrappers: Record<string, Wrapper>,
+  wrappers: Record<string, Wrapper>
 ) {
-  const queryName = toCamelCase(model.name, 'updateOne');
-  const queryInputTypeName = toCamelCase(queryName, 'inputType');
+  const queryName = toCamelCase(model.name, "updateOne");
+  const queryInputTypeName = toCamelCase(queryName, "inputType");
   const primaryKey = model.primaryKey;
 
-  @InputType(toCamelCase(queryInputTypeName, 'payloadType'))
+  @InputType(toCamelCase(queryInputTypeName, "payloadType"))
   class UpdateInputPayloadType {
     static {
       for (const { name, drizzleField } of model.fields) {
@@ -38,46 +38,47 @@ export function updateOneGenerator(
 
       Field(() => UpdateInputPayloadType, {
         nullable: false,
-      })(UpdateInputType.prototype, 'payload');
+      })(UpdateInputType.prototype, "payload");
     }
   }
 
-  const updateOneMutation = async (input) => {
+  const updateOneMutation = async (input: any) => {
     const results = await db
       .update(model.drizzleTable)
       .set(input.payload)
-      .where(eq(model.drizzleTable[primaryKey.name], input.id))
+      // @ts-expect-error TODO we need to fix typing here
+      .where(eq(model.drizzleTable[primaryKey.name], input[primaryKey.name]))
       .returning();
     return results.length === 1;
   };
 
-  target.prototype[queryName] = async function (input) {
+  target.prototype[queryName] = async function (input: any) {
     if (wrappers.updateOne) {
       return wrappers.updateOne(updateOneMutation, input);
     }
     return updateOneMutation(input);
   };
 
-  Reflect.defineMetadata('design:type', Function, target.prototype, queryName);
+  Reflect.defineMetadata("design:type", Function, target.prototype, queryName);
 
   Reflect.defineMetadata(
-    'design:paramtypes',
+    "design:paramtypes",
     [UpdateInputType],
     target.prototype,
-    queryName,
+    queryName
   );
 
   Reflect.defineMetadata(
-    'design:returntype',
+    "design:returntype",
     Promise,
     target.prototype,
-    queryName,
+    queryName
   );
 
-  Args('input', { type: () => UpdateInputType, nullable: false })(
+  Args("input", { type: () => UpdateInputType, nullable: false })(
     target.prototype,
     queryName,
-    0,
+    0
   );
 
   Mutation(() => Boolean, {
@@ -85,6 +86,6 @@ export function updateOneGenerator(
   })(
     target.prototype,
     queryName,
-    Object.getOwnPropertyDescriptor(target.prototype, queryName),
+    Object.getOwnPropertyDescriptor(target.prototype, queryName)!
   );
 }

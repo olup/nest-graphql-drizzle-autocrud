@@ -1,12 +1,12 @@
-import { Args, Parent, ResolveField } from '@nestjs/graphql';
-import { Model } from '../types/model.types';
-import { SchemaTypes } from '../types/registry.types';
-import { generateRelationFilters } from './types/type.generator';
+import { Args, Parent, ResolveField } from "@nestjs/graphql";
+import { Model } from "../types/model.types";
+import { SchemaTypes } from "../types/registry.types";
+import { generateRelationFilters } from "./types/type.generator";
 
 export const generateRelations = (
   target: any,
   model: Model,
-  typeRegistry: SchemaTypes,
+  typeRegistry: SchemaTypes
 ) => {
   for (const relation of model.relations) {
     if (!typeRegistry[relation.foreignModel.name]) continue;
@@ -21,27 +21,27 @@ export const generateRelations = (
     };
 
     Reflect.defineMetadata(
-      'design:paramtypes',
+      "design:paramtypes",
       [, InputType],
       target.prototype,
-      fieldName,
+      fieldName
     );
-    Args('input', { type: () => InputType, nullable: true })(
+    Args("input", { type: () => InputType, nullable: true })(
       target.prototype,
       fieldName,
-      1,
+      1
     );
     Parent()(target.prototype, fieldName, 0);
     ResolveField(
-      () => (relation.relationType === 'many' ? [graphqlType] : graphqlType),
+      () => (relation.relationType === "many" ? [graphqlType] : graphqlType),
       {
         nullable:
-          relation.relationType === 'many' ? false : relation.isNullable,
-      },
+          relation.relationType === "many" ? false : relation.isNullable,
+      }
     )(
       target.prototype,
       fieldName,
-      Object.getOwnPropertyDescriptor(target.prototype, fieldName),
+      Object.getOwnPropertyDescriptor(target.prototype, fieldName)!
     );
   }
 };

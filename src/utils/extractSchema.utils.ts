@@ -4,9 +4,9 @@ import {
   is,
   One,
   Relations,
-} from 'drizzle-orm';
-import { getTableConfig, PgTable } from 'drizzle-orm/pg-core';
-import { Field, Model } from '../types/model.types';
+} from "drizzle-orm";
+import { getTableConfig, PgTable } from "drizzle-orm/pg-core";
+import { Field, Model } from "../types/model.types";
 
 export const extractFields = (table: PgTable): Field[] => {
   return Object.entries(table).map(([key, value]) => ({
@@ -18,7 +18,7 @@ export const extractFields = (table: PgTable): Field[] => {
 };
 
 export const extractSchemaRepresentation = (
-  schema: Record<string, PgTable | Relations>,
+  schema: Record<string, PgTable | Relations>
 ) => {
   // first extract the models
   const models: Model[] = [];
@@ -26,8 +26,13 @@ export const extractSchemaRepresentation = (
     if (is(object, PgTable)) {
       const fields = extractFields(object);
       const primaryKey = fields.find(
-        ({ drizzleField }) => drizzleField.primary,
+        ({ drizzleField }) => drizzleField.primary
       );
+      if (!primaryKey) {
+        throw new Error(
+          `Table ${getTableConfig(object).name} does not have a primary key - which is needed for graphql auto generation`
+        );
+      }
       models.push({
         name: naming,
         dbTableName: getTableConfig(object).name,
@@ -48,52 +53,70 @@ export const extractSchemaRepresentation = (
 
   // now extract relations
   for (const { model, extractedRelation } of relations) {
+    if (!model) throw new Error("Model not found");
+
     for (const [relationFieldName, relation] of Object.entries(
-      extractedRelation,
+      extractedRelation
     )) {
-      if (is(relation, One) && relation.config) {
-        model.relations.push({
-          modelName: model.name,
-          foreignModel: models.find(
-            (m) => m.dbTableName === getTableName(relation.referencedTable),
-          ),
-          relationFieldName,
-          relationType: 'one',
-          isNullable: relation.isNullable,
-          localField: model.fields.find(
-            (f) => f.dbColumnName === relation.config.fields[0].name,
-          ),
-          foreignField: model.fields.find(
-            (f) => f.dbColumnName === relation.config.references[0].name,
-          ),
-        });
-      } else {
-        const referenceRelationTable = relations.find(
-          (r) => r.model.dbTableName === getTableName(relation.referencedTable),
-        );
-        const referenceRelation = Object.values(
-          referenceRelationTable.extractedRelation,
-        ).find((r) => r.relationName === relation.relationName);
-
-        if (!is(referenceRelation, One)) continue;
-
+      if (is(relation, One) && !!relation.config) {
         const foreignModel = models.find(
-          (m) => m.dbTableName === getTableName(relation.referencedTable),
+          (m) => m.dbTableName === getTableName(relation.referencedTable)
         );
+        if (!foreignModel) {
+          throw new Error(
+            `Foreign model not found for relation ${relation.relationName}`
+          );
+        }
 
         model.relations.push({
           modelName: model.name,
           foreignModel,
           relationFieldName,
-          relationType: is(relation, One) ? 'one' : 'many',
+          relationType: "one",
+          isNullable: relation.isNullable,
+          localField: model.fields.find(
+            (f) => f.dbColumnName === relation.config!.fields[0].name
+          ),
+          foreignField: model.fields.find(
+            (f) => f.dbColumnName === relation.config!.references[0].name
+          ),
+        });
+      } else {
+        const referenceRelationTable = relations.find(
+          (r) => r.model!.dbTableName === getTableName(relation.referencedTable)
+        );
+        const referenceRelation = Object.values(
+          referenceRelationTable!.extractedRelation
+        ).find((r) => r.relationName === relation.relationName);
+
+        if (!referenceRelation || is(referenceRelation, One)) continue;
+
+        const foreignModel = models.find(
+          (m) => m.dbTableName === getTableName(relation.referencedTable)
+        );
+
+        if (!foreignModel) {
+          throw new Error(
+            `Foreign model not found for relation ${relation.relationName}`
+          );
+        }
+
+        model.relations.push({
+          modelName: model.name,
+          foreignModel,
+          relationFieldName,
+          relationType: is(relation, One) ? "one" : "many",
           isNullable: is(relation, One) ? relation.isNullable : false,
 
           localField: model.fields.find(
             (f) =>
-              f.dbColumnName === referenceRelation.config.references[0].name,
+              // @ts-expect-error TODO need to figure out the typing here
+              f.dbColumnName === referenceRelation.config.references[0].name
           ),
           foreignField: foreignModel.fields.find(
-            (f) => f.dbColumnName === referenceRelation.config.fields[0].name,
+            // @ts-expect-error TODO need to figure out the typing here
+
+            (f) => f.dbColumnName === referenceRelation.config.fields[0].name
           ),
         });
       }

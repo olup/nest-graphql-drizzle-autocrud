@@ -1,19 +1,19 @@
-import { Args, Field, InputType, Mutation } from '@nestjs/graphql';
-import { eq } from 'drizzle-orm';
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { Model } from '../types/model.types';
-import { Wrapper } from '../types/wrapper.type';
-import { toCamelCase } from '../utils/string.utils';
-import { mapDrizzleToGraphQLType } from '../utils/type-mapping.utils';
+import { Args, Field, InputType, Mutation } from "@nestjs/graphql";
+import { eq } from "drizzle-orm";
+import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { Model } from "../types/model.types";
+import { Wrapper } from "../types/wrapper.type";
+import { toCamelCase } from "../utils/string.utils";
+import { mapDrizzleToGraphQLType } from "../utils/type-mapping.utils";
 
 export function deleteOneGenerator(
   target: any,
   model: Model,
   db: PostgresJsDatabase,
-  wrappers: Record<string, Wrapper>,
+  wrappers: Record<string, Wrapper>
 ) {
-  const queryName = toCamelCase(model.name, 'deleteOne');
-  const queryInputTypeName = toCamelCase(queryName, 'inputType');
+  const queryName = toCamelCase(model.name, "deleteOne");
+  const queryInputTypeName = toCamelCase(queryName, "inputType");
 
   @InputType(queryInputTypeName)
   class DeleteOneInputType {
@@ -25,7 +25,7 @@ export function deleteOneGenerator(
     }
   }
 
-  const deleteOneMutation = async (input) => {
+  const deleteOneMutation = async (input: any) => {
     const results = await db
       .delete(model.drizzleTable)
       .where(eq(model.primaryKey.drizzleField, input[model.primaryKey.name]))
@@ -33,7 +33,7 @@ export function deleteOneGenerator(
     return results.length === 1;
   };
 
-  target.prototype[queryName] = async function (input) {
+  target.prototype[queryName] = async function (input: any) {
     if (wrappers.deleteOne) {
       return wrappers.deleteOne(deleteOneMutation, input);
     }
@@ -41,16 +41,16 @@ export function deleteOneGenerator(
   };
 
   Reflect.defineMetadata(
-    'design:paramtypes',
+    "design:paramtypes",
     [DeleteOneInputType],
     target.prototype,
-    queryName,
+    queryName
   );
 
-  Args('input', { type: () => DeleteOneInputType, nullable: false })(
+  Args("input", { type: () => DeleteOneInputType, nullable: false })(
     target.prototype,
     queryName,
-    0,
+    0
   );
 
   Mutation(() => Boolean, {
@@ -58,6 +58,6 @@ export function deleteOneGenerator(
   })(
     target.prototype,
     queryName,
-    Object.getOwnPropertyDescriptor(target.prototype, queryName),
+    Object.getOwnPropertyDescriptor(target.prototype, queryName)!
   );
 }

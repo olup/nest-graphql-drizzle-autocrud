@@ -1,13 +1,13 @@
-import { Args, Field, Info, InputType, Mutation } from '@nestjs/graphql';
-import { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import { Model } from '../types/model.types';
-import { Wrapper } from '../types/wrapper.type';
-import { infoNodeToWithRelation } from '../utils/query.utils';
-import { toCamelCase } from '../utils/string.utils';
-import { mapDrizzleToGraphQLType } from '../utils/type-mapping.utils';
+import { Args, Field, Info, InputType, Mutation } from "@nestjs/graphql";
+import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { Model } from "../types/model.types";
+import { Wrapper } from "../types/wrapper.type";
+import { infoNodeToWithRelation } from "../utils/query.utils";
+import { toCamelCase } from "../utils/string.utils";
+import { mapDrizzleToGraphQLType } from "../utils/type-mapping.utils";
 
 export function generateCreateInputType(model: Model) {
-  const typeName = toCamelCase(model.name, 'createInputType');
+  const typeName = toCamelCase(model.name, "createInputType");
 
   @InputType(typeName)
   class CreateInputType {
@@ -34,21 +34,26 @@ export function createOneGenerator(
   model: Model,
   objectType: any,
   db: PostgresJsDatabase,
-  wrappers: Record<string, Wrapper>,
+  wrappers: Record<string, Wrapper>
 ) {
-  const createMutationName = toCamelCase(model.name, 'createOne');
+  const createMutationName = toCamelCase(model.name, "createOne");
   const createInputType = generateCreateInputType(model);
 
-  target.prototype[createMutationName] = async function (input, info) {
+  target.prototype[createMutationName] = async function (
+    input: any,
+    info: any
+  ) {
     const queryMap = infoNodeToWithRelation(info.fieldNodes[0], model); // TODO
 
-    const createOneMutation = async (input) => {
+    const createOneMutation = async (input: any) => {
       const [result] = await db
         .insert(model.drizzleTable)
         .values(input)
         .returning();
 
+      // @ts-expect-error TODO we need to fix typing here
       return db.query[model.name].findFirst({
+        // @ts-expect-error TODO we need to fix typing here
         where: (t, { eq }) =>
           eq(t[model.primaryKey.name], result[model.primaryKey.name]),
         with: queryMap,
@@ -62,16 +67,16 @@ export function createOneGenerator(
   };
 
   Reflect.defineMetadata(
-    'design:paramtypes',
+    "design:paramtypes",
     [createInputType],
     target.prototype,
-    createMutationName,
+    createMutationName
   );
 
-  Args('input', { type: () => createInputType, nullable: false })(
+  Args("input", { type: () => createInputType, nullable: false })(
     target.prototype,
     createMutationName,
-    0,
+    0
   );
 
   Info()(target.prototype, createMutationName, 1);
@@ -81,6 +86,6 @@ export function createOneGenerator(
   })(
     target.prototype,
     createMutationName,
-    Object.getOwnPropertyDescriptor(target.prototype, createMutationName),
+    Object.getOwnPropertyDescriptor(target.prototype, createMutationName)!
   );
 }

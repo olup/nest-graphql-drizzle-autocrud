@@ -28,13 +28,16 @@ export const infoNodeToWithRelation = (
   const where = (table: PgTable) =>
     input?.filter && queryFilterToDrizzleFilter(input.filter, table);
 
-  const $with = relationFields.reduce((acc, { name, field }) => {
-    acc[name] = infoNodeToWithRelation(
-      field,
-      model.relations.find((r) => r.relationFieldName === name)?.foreignModel
-    );
-    return acc;
-  }, {});
+  const $with = relationFields?.reduce(
+    (acc, { name, field }) => {
+      acc[name] = infoNodeToWithRelation(
+        field,
+        model.relations.find((r) => r.relationFieldName === name)?.foreignModel!
+      );
+      return acc;
+    },
+    {} as Record<string, any>
+  );
 
   return {
     limit,

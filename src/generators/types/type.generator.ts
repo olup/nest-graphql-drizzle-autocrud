@@ -1,13 +1,13 @@
-import { Field, InputType, Int, ObjectType } from '@nestjs/graphql';
-import { Model, RelationRepresentation } from '../../types/model.types';
-import { toCamelCase } from '../../utils/string.utils';
+import { Field, InputType, Int, ObjectType } from "@nestjs/graphql";
+import { Model, RelationRepresentation } from "../../types/model.types";
+import { toCamelCase } from "../../utils/string.utils";
 import {
   mapDrizzleToGraphQLType,
   mapGraphQLTypeToFilterType,
-} from '../../utils/type-mapping.utils';
+} from "../../utils/type-mapping.utils";
 
 export function generateGraphQLType(model: Model) {
-  const typeName = toCamelCase(model.name, 'objectType');
+  const typeName = toCamelCase(model.name, "objectType");
 
   @ObjectType(typeName)
   class GeneratedType {
@@ -28,7 +28,7 @@ export function generateGraphQLType(model: Model) {
 
 export function generateGetManyInputType(model: Model) {
   // input types
-  @InputType(toCamelCase(model.name, 'filterType'))
+  @InputType(toCamelCase(model.name, "filterType"))
   class GetManyInputFilterType {
     static {
       for (const { name, drizzleField } of model.fields) {
@@ -49,7 +49,7 @@ export function generateGetManyInputType(model: Model) {
     not?: GetManyInputFilterType;
   }
 
-  @InputType(toCamelCase(model.name, 'getManyInputType'))
+  @InputType(toCamelCase(model.name, "getManyInputType"))
   class GetManyInputType {
     @Field(() => Int, { nullable: true })
     offset?: number;
@@ -69,11 +69,13 @@ export function generateGetManyInputType(model: Model) {
 
 export function generateRelationFilters(
   model: Model,
-  sourceRelation: RelationRepresentation,
+  sourceRelation: RelationRepresentation
 ) {
-  const relationFieldName = sourceRelation.foreignField.name;
+  const relationFieldName = sourceRelation.foreignField?.name;
+  if (!relationFieldName)
+    throw new Error("Foreign field name not found for " + model.name);
   // input types
-  @InputType(toCamelCase(model.name, sourceRelation.modelName, 'filterType'))
+  @InputType(toCamelCase(model.name, sourceRelation.modelName, "filterType"))
   class RelationFilterInputType {
     static {
       for (const { name, drizzleField } of model.fields) {
@@ -98,7 +100,7 @@ export function generateRelationFilters(
   }
 
   @InputType(
-    toCamelCase(model.name, sourceRelation.modelName, 'getManyInputType'),
+    toCamelCase(model.name, sourceRelation.modelName, "getManyInputType")
   )
   class GetManyInputType {
     @Field(() => Int, { nullable: true })
