@@ -1,19 +1,19 @@
-import { PgTable } from 'drizzle-orm/pg-core';
-import { Model } from '../types/model.types';
-import { QueryObject } from './graphql.utils';
-import { queryFilterToDrizzleFilter } from './type-mapping.utils';
+import { PgTable } from "drizzle-orm/pg-core";
+import { Model } from "../types/model.types";
+import { QueryObject } from "./graphql.utils";
+import { queryFilterToDrizzleFilter } from "./type-mapping.utils";
 
-function isObject(variable) {
+function isObject(variable: any) {
   return (
     variable !== null &&
-    typeof variable === 'object' &&
+    typeof variable === "object" &&
     !Array.isArray(variable)
   );
 }
 
 export const infoNodeToWithRelation = (
-  node: QueryObject['$fields'],
-  model: Model,
+  node: QueryObject["$fields"],
+  model: Model
 ) => {
   const input = node.$args?.input;
 
@@ -31,7 +31,7 @@ export const infoNodeToWithRelation = (
   const $with = relationFields.reduce((acc, { name, field }) => {
     acc[name] = infoNodeToWithRelation(
       field,
-      model.relations.find((r) => r.relationFieldName === name)?.foreignModel,
+      model.relations.find((r) => r.relationFieldName === name)?.foreignModel
     );
     return acc;
   }, {});

@@ -1,15 +1,15 @@
-import { Int } from '@nestjs/graphql';
-import { SQL } from 'drizzle-orm';
-import { PgTable } from 'drizzle-orm/pg-core';
+import { Int } from "@nestjs/graphql";
+import { SQL } from "drizzle-orm";
+import { PgTable } from "drizzle-orm/pg-core";
 
 export type DrizzleType =
-  | 'integer'
-  | 'text'
-  | 'timestamp'
-  | 'number'
-  | 'boolean';
+  | "integer"
+  | "text"
+  | "timestamp"
+  | "number"
+  | "boolean";
 export type GraphQLType = typeof Int | typeof String | typeof Boolean;
-export type FilterFunction = (...args: any[]) => SQL;
+export type FilterFunction = (...args: any[]) => SQL | undefined;
 
 export type Field = {
   name: string;
@@ -23,7 +23,7 @@ export type RelationRepresentation = {
   localField?: Field;
   foreignModel: Model;
   foreignField?: Field;
-  relationType: 'one' | 'many';
+  relationType: "one" | "many";
   isNullable: boolean;
 };
 

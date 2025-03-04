@@ -1,11 +1,11 @@
-import { Int } from '@nestjs/graphql';
+import { Int } from "@nestjs/graphql";
 import {
   BooleanFilter,
   DateTimeFilter,
   FloatFilter,
   IntFilter,
   StringFilter,
-} from './generics';
+} from "./generics";
 import {
   and,
   eq,
@@ -19,9 +19,9 @@ import {
   not,
   or,
   SQL,
-} from 'drizzle-orm';
-import { PgTable } from 'drizzle-orm/pg-core';
-import { DrizzleType, FilterFunction, GraphQLType } from '../types/model.types';
+} from "drizzle-orm";
+import { PgTable } from "drizzle-orm/pg-core";
+import { DrizzleType, FilterFunction, GraphQLType } from "../types/model.types";
 
 /**
  * Maps Drizzle types to GraphQL types
@@ -76,8 +76,8 @@ export function mapFilterToDrizzleFilter(filter: string): FilterFunction {
 
 export const queryFilterToDrizzleFilter = (
   queryFilter: Record<string, any>,
-  fields: PgTable,
-): SQL => {
+  fields: PgTable
+): SQL | undefined => {
   if (!queryFilter || Object.keys(queryFilter).length === 0) {
     return undefined;
   }
@@ -87,21 +87,24 @@ export const queryFilterToDrizzleFilter = (
       if (value === undefined) return undefined;
 
       switch (key) {
-        case 'and':
+        case "and":
           return and(
             ...(value as any[])
               .map((f) => queryFilterToDrizzleFilter(f, fields))
-              .filter(Boolean),
+              .filter(Boolean)
           );
-        case 'or':
+        case "or":
           return or(
             ...(value as any[])
               .map((f) => queryFilterToDrizzleFilter(f, fields))
-              .filter(Boolean),
+              .filter(Boolean)
           );
-        case 'not':
-          return not(queryFilterToDrizzleFilter(value, fields));
+        case "not":
+          const operation = queryFilterToDrizzleFilter(value, fields);
+          if (!operation) return undefined;
+          return not(operation);
         default:
+          // @ts-expect-error we know that key is a string
           if (!fields[key]) {
             throw new Error(`Unknown field: ${key}`);
           }
@@ -110,9 +113,10 @@ export const queryFilterToDrizzleFilter = (
               .map(([filterKey, filterValue]): SQL | undefined => {
                 if (filterValue === undefined) return undefined;
                 const filterFunction = mapFilterToDrizzleFilter(filterKey);
+                // @ts-expect-error we know that key is a string
                 return filterFunction(fields[key], filterValue);
               })
-              .filter(Boolean),
+              .filter(Boolean)
           );
       }
     })

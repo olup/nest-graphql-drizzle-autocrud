@@ -10,7 +10,7 @@
     "test": "vitest",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "prepare": "pnpm build"
+    "prepare": "pnpm run build"
   },
   "keywords": [
     "nestjs",
@@ -31,7 +31,7 @@
     "@typescript-eslint/eslint-plugin": "^6.7.3",
     "@typescript-eslint/parser": "^6.7.3",
     "drizzle-orm": "^0.28.6",
-    "eslint": "^8.50.0",
+    "eslint": "^8.57.1",
     "prettier": "^3.0.3",
     "reflect-metadata": "^0.1.13",
     "typescript": "^5.2.2",
@@ -60,5 +60,8 @@
   "bugs": {
     "url": "https://github.com/yourusername/nest-graphql-drizzle-autocrud/issues"
   },
-  "homepage": "https://github.com/yourusername/nest-graphql-drizzle-autocrud#readme"
+  "homepage": "https://github.com/yourusername/nest-graphql-drizzle-autocrud#readme",
+  "dependencies": {
+    "graphql": "^16.10.0"
+  }
 }

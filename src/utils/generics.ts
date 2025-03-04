@@ -1,16 +1,19 @@
-import { Field, Float, InputType, Int, ObjectType } from '@nestjs/graphql';
+import { Field, Float, InputType, Int, ObjectType } from "@nestjs/graphql";
 
-@ObjectType('PageInfo')
+@ObjectType("PageInfo")
 export class PageInfo {
   @Field(() => Int)
+  // @ts-expect-error we declare it
   public offset: number;
   @Field(() => Int, { nullable: true })
+  // @ts-expect-error we declare it
   public limit: number;
   @Field(() => Int)
+  // @ts-expect-error we declare it
   public total: number;
 }
 
-@InputType('StringFilter')
+@InputType("StringFilter")
 export class StringFilter {
   @Field(() => String, { nullable: true })
   public equals?: string;
@@ -30,7 +33,7 @@ export class StringFilter {
   isNull?: boolean;
 }
 
-@InputType('IntFilter')
+@InputType("IntFilter")
 export class IntFilter {
   @Field(() => Int, { nullable: true })
   public equals?: number;
@@ -48,7 +51,7 @@ export class IntFilter {
   isNull?: boolean;
 }
 
-@InputType('FloatFilter')
+@InputType("FloatFilter")
 export class FloatFilter {
   @Field(() => Float, { nullable: true })
   public equals?: number;
@@ -66,7 +69,7 @@ export class FloatFilter {
   isNull?: boolean;
 }
 
-@InputType('DateTimeFilter')
+@InputType("DateTimeFilter")
 export class DateTimeFilter {
   @Field(() => Date, { nullable: true })
   public equals?: Date;
@@ -84,7 +87,7 @@ export class DateTimeFilter {
   isNull?: boolean;
 }
 
-@InputType('BooleanFilter')
+@InputType("BooleanFilter")
 export class BooleanFilter {
   @Field(() => Boolean, { nullable: true })
   public equals?: boolean;
