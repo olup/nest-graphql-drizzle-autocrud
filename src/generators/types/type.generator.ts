@@ -17,7 +17,7 @@ export function generateGraphQLType(model: Model) {
         const fieldType = mapDrizzleToGraphQLType(type);
 
         Field(() => fieldType, {
-          nullable: drizzleField.nullable,
+          nullable: !drizzleField.notNull || drizzleField.hasDefault,
         })(GeneratedType.prototype, toCamelCase(fieldName));
       }
     }
@@ -75,7 +75,14 @@ export function generateRelationFilters(
   if (!relationFieldName)
     throw new Error("Foreign field name not found for " + model.name);
   // input types
-  @InputType(toCamelCase(model.name, sourceRelation.modelName, "filterType"))
+  @InputType(
+    toCamelCase(
+      model.name,
+      sourceRelation.modelName,
+      sourceRelation.localField?.name || "-",
+      "filterType"
+    )
+  )
   class RelationFilterInputType {
     static {
       for (const { name, drizzleField } of model.fields) {
@@ -100,7 +107,12 @@ export function generateRelationFilters(
   }
 
   @InputType(
-    toCamelCase(model.name, sourceRelation.modelName, "getManyInputType")
+    toCamelCase(
+      model.name,
+      sourceRelation.modelName,
+      sourceRelation.localField?.name || "-",
+      "getManyInputType"
+    )
   )
   class GetManyInputType {
     @Field(() => Int, { nullable: true })

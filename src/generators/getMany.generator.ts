@@ -41,6 +41,8 @@ export function getManyGenerator(
 
     const getManyMutation = async (input?: any) => {
       try {
+        console.log("input", input);
+        console.log(model.name);
         // @ts-expect-error TODO we need to fix typing here
         const results = await db.query[model.name].findMany({
           where: (table: PgTable) =>
@@ -50,21 +52,21 @@ export function getManyGenerator(
           offset: input?.offset,
         });
 
-        const totalCount = await db
-          .select({ count: count() })
-          .from(model.drizzleTable)
-          .where(
-            (table) =>
-              input?.filter &&
-              queryFilterToDrizzleFilter(input.filter, table as any)
-          );
+        // const totalCount = await db
+        //   .select({ count: count() })
+        //   .from(model.drizzleTable)
+        //   .where(
+        //     (table) =>
+        //       input?.filter &&
+        //       queryFilterToDrizzleFilter(input.filter, table as any)
+        //   );
 
         return {
           nodes: results,
           pageInfo: {
             offset: input?.offset || 0,
             limit: input?.limit,
-            total: totalCount[0].count,
+            total: 0, //totalCount[0].count,
           },
         };
       } catch (e) {

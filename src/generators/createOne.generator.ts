@@ -56,7 +56,7 @@ export function createOneGenerator(
         // @ts-expect-error TODO we need to fix typing here
         where: (t, { eq }) =>
           eq(t[model.primaryKey.name], result[model.primaryKey.name]),
-        with: queryMap,
+        with: queryMap.with,
       });
     };
 

@@ -7,7 +7,11 @@ export type DrizzleType =
   | "text"
   | "timestamp"
   | "number"
-  | "boolean";
+  | "boolean"
+  | "serial"
+  | "string"
+  | "bigint"
+  | "json";
 export type GraphQLType = typeof Int | typeof String | typeof Boolean;
 export type FilterFunction = (...args: any[]) => SQL | undefined;
 

@@ -32,9 +32,19 @@ export function mapDrizzleToGraphQLType(drizzleType: DrizzleType): GraphQLType {
     text: String,
     timestamp: String,
     number: Int,
+    serial: Int,
     boolean: Boolean,
+    string: String,
+    bigint: Int,
+    json: String,
   };
-  return typeMap[drizzleType] || String;
+  const type = typeMap[drizzleType];
+
+  if (!type) {
+    console.warn(`Unknown type: ${drizzleType}`);
+    return String;
+  }
+  return type;
 }
 
 /**
@@ -106,6 +116,7 @@ export const queryFilterToDrizzleFilter = (
         default:
           // @ts-expect-error we know that key is a string
           if (!fields[key]) {
+            console.log(fields);
             throw new Error(`Unknown field: ${key}`);
           }
           return and(

@@ -3,6 +3,7 @@ import {
   getTableName,
   is,
   One,
+  Relation,
   Relations,
 } from "drizzle-orm";
 import { getTableConfig, PgTable } from "drizzle-orm/pg-core";
@@ -48,7 +49,9 @@ export const extractSchemaRepresentation = (
     .filter((s) => is(s, Relations))
     .map((r: Relations) => ({
       model: models.find((m) => m.dbTableName === getTableName(r.table)),
-      extractedRelation: r.config(createTableRelationsHelpers(r.table)),
+      extractedRelation: r.config(
+        createTableRelationsHelpers(r.table)
+      ) as Record<string, Relation<string> & { config?: any }>,
     }));
 
   // now extract relations
@@ -58,68 +61,94 @@ export const extractSchemaRepresentation = (
     for (const [relationFieldName, relation] of Object.entries(
       extractedRelation
     )) {
-      if (is(relation, One) && !!relation.config) {
-        const foreignModel = models.find(
-          (m) => m.dbTableName === getTableName(relation.referencedTable)
-        );
-        if (!foreignModel) {
-          throw new Error(
-            `Foreign model not found for relation ${relation.relationName}`
-          );
-        }
+      if (!relation) throw new Error("Relation not found");
 
-        model.relations.push({
-          modelName: model.name,
-          foreignModel,
-          relationFieldName,
-          relationType: "one",
-          isNullable: relation.isNullable,
-          localField: model.fields.find(
-            (f) => f.dbColumnName === relation.config!.fields[0].name
-          ),
-          foreignField: model.fields.find(
-            (f) => f.dbColumnName === relation.config!.references[0].name
-          ),
-        });
+      const relationType = is(relation, One) ? "one" : "many";
+      console.log("relation type", relationType);
+
+      const foreignModel = models.find(
+        (m) => m.dbTableName === relation.referencedTableName
+      );
+      if (!foreignModel) {
+        throw new Error(
+          `Foreign model not found for relation ${relation.relationName}`
+        );
+      }
+
+      let localField;
+      let foreignField;
+
+      // relation can have fields configuration, or needs the correponding relation on the other side
+
+      if (relation.config?.fields && relation.config?.references) {
+        console.log("debug : relation has local parameters");
+
+        localField = model.fields.find(
+          (f) => f.dbColumnName === relation.config!.fields[0].name
+        );
+        foreignField = foreignModel.fields.find(
+          (f) => f.dbColumnName === relation.config!.references[0].name
+        );
       } else {
+        // we need to find the corresponding relation on the other side
+        // find the opposite relation
         const referenceRelationTable = relations.find(
           (r) => r.model!.dbTableName === getTableName(relation.referencedTable)
         );
-        const referenceRelation = Object.values(
+        const referenceRelationTableRelations = Object.values(
           referenceRelationTable!.extractedRelation
-        ).find((r) => r.relationName === relation.relationName);
-
-        if (!referenceRelation || is(referenceRelation, One)) continue;
-
-        const foreignModel = models.find(
-          (m) => m.dbTableName === getTableName(relation.referencedTable)
         );
 
-        if (!foreignModel) {
+        let referenceRelationCandidates =
+          referenceRelationTableRelations.filter(
+            (r) => r.referencedTableName === model.dbTableName
+          );
+
+        if (!referenceRelationCandidates?.length) {
           throw new Error(
-            `Foreign model not found for relation ${relation.relationName}`
+            `Reference relation not found for relation ${relation.relationName}`
           );
         }
 
-        model.relations.push({
-          modelName: model.name,
-          foreignModel,
-          relationFieldName,
-          relationType: is(relation, One) ? "one" : "many",
-          isNullable: is(relation, One) ? relation.isNullable : false,
+        if (referenceRelationCandidates.length > 1) {
+          console.log("debug : multiple reference relations found");
+          referenceRelationCandidates = referenceRelationCandidates.filter(
+            (r) => r.config.relationName === relation.config.relationName
+          );
+        }
 
-          localField: model.fields.find(
+        const referenceRelation = referenceRelationCandidates[0];
+
+        if (
+          referenceRelation?.config?.fields ||
+          referenceRelation?.config?.references
+        ) {
+          console.log("debug : relation has remote parameters");
+          localField = model.fields.find(
             (f) =>
-              // @ts-expect-error TODO need to figure out the typing here
-              f.dbColumnName === referenceRelation.config.references[0].name
-          ),
-          foreignField: foreignModel.fields.find(
-            // @ts-expect-error TODO need to figure out the typing here
-
-            (f) => f.dbColumnName === referenceRelation.config.fields[0].name
-          ),
-        });
+              f.dbColumnName === referenceRelation.config!.references[0].name
+          );
+          foreignField = foreignModel.fields.find(
+            (f) => f.dbColumnName === referenceRelation.config!.fields[0].name
+          );
+        } else {
+          console.log("debug : relation has no parameters");
+          throw new Error(
+            `Reference relation not found for relation ${relation.relationName}`
+          );
+        }
       }
+
+      model.relations.push({
+        modelName: model.name,
+        foreignModel,
+        relationFieldName,
+        relationType: is(relation, One) ? "one" : "many",
+        isNullable: is(relation, One) ? relation.isNullable : false,
+
+        localField,
+        foreignField,
+      });
     }
   }
 
